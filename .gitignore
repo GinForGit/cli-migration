@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+*.exe
+*.dll
+*.so
+*.test
+*.out
+vendor/
+dist/
+coverage.out
+cli-mig
+!cmd/cli-mig
+.DS_Store
+Thumbs.db
