@@ -7,6 +7,7 @@ import (
 	"github.com/GinForGit/cli-migration/internal/manifest"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/plan"
+	"github.com/GinForGit/cli-migration/pkg/api"
 	"github.com/spf13/cobra"
 )
 
@@ -14,6 +15,7 @@ func newApplyCommand() *cobra.Command {
 	var manifestPath string
 	var dryRun bool
 	var skipManual bool
+	var targetOS string
 
 	cmd := &cobra.Command{
 		Use:   "apply",
@@ -28,7 +30,11 @@ func newApplyCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			p, err := plan.Generate(cmd.Context(), plat, m)
+			os := api.OSType(targetOS)
+			if os == "" {
+				os = api.OSType(plat.OS())
+			}
+			p, err := plan.Generate(cmd.Context(), plat, m, os)
 			if err != nil {
 				return err
 			}
@@ -46,6 +52,7 @@ func newApplyCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&manifestPath, "manifest", "m", "", "清单文件路径（必填）")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "只预览，不执行")
 	cmd.Flags().BoolVar(&skipManual, "skip-manual", false, "跳过无法自动安装的 manual 条目")
+	cmd.Flags().StringVar(&targetOS, "target-os", "", "目标操作系统：windows、linux（默认当前系统）")
 	_ = cmd.MarkFlagRequired("manifest")
 	return cmd
 }

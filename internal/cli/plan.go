@@ -6,11 +6,13 @@ import (
 	"github.com/GinForGit/cli-migration/internal/manifest"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/plan"
+	"github.com/GinForGit/cli-migration/pkg/api"
 	"github.com/spf13/cobra"
 )
 
 func newPlanCommand() *cobra.Command {
 	var manifestPath string
+	var targetOS string
 
 	cmd := &cobra.Command{
 		Use:   "plan",
@@ -25,7 +27,11 @@ func newPlanCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			p, err := plan.Generate(cmd.Context(), plat, m)
+			os := api.OSType(targetOS)
+			if os == "" {
+				os = api.OSType(plat.OS())
+			}
+			p, err := plan.Generate(cmd.Context(), plat, m, os)
 			if err != nil {
 				return err
 			}
@@ -35,6 +41,7 @@ func newPlanCommand() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&manifestPath, "manifest", "m", "", "清单文件路径（必填）")
+	cmd.Flags().StringVar(&targetOS, "target-os", "", "目标操作系统：windows、linux（默认当前系统）")
 	_ = cmd.MarkFlagRequired("manifest")
 	return cmd
 }
