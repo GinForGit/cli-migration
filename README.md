@@ -13,7 +13,7 @@ CLI 无痛搬家工具：发现并迁移你的命令行环境。
 - [x] Phase 1：发现引擎与核心 Provider
 - [x] Phase 2：计划与还原
 - [x] Phase 3：扩展 Provider 与 Bundle
-- [ ] Phase 4：跨操作系统映射（预留）
+- [x] Phase 4：跨操作系统映射（基础实现）
 
 ## 支持的 Provider
 
@@ -46,6 +46,16 @@ cli-mig discover --output my-env.yaml
 
 ```bash
 cli-mig discover --output my-env.yaml --probe-versions
+```
+
+如果要迁移到另一操作系统，可生成 `target_overrides`（当前支持 windows/linux 互转）：
+
+```bash
+# 在 Windows 上扫描，为 Linux 生成映射
+cli-mig discover --output my-env.yaml --target-os linux
+
+# 在 Linux 上扫描，为 Windows 生成映射
+cli-mig discover --output my-env.yaml --target-os windows
 ```
 
 ### 2. 预览还原计划

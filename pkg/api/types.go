@@ -33,13 +33,14 @@ const (
 
 // Entry describes a single installed CLI tool.
 type Entry struct {
-	Name         string                 `json:"name" yaml:"name"`
-	Command      string                 `json:"command" yaml:"command"`
-	Version      string                 `json:"version" yaml:"version"`
-	Provider     ProviderName           `json:"provider" yaml:"provider"`
-	ProviderArgs map[string]interface{} `json:"provider_args,omitempty" yaml:"provider_args,omitempty"`
-	Aliases      []string               `json:"aliases,omitempty" yaml:"aliases,omitempty"`
-	ConfigRefs   []ConfigRef            `json:"config_refs,omitempty" yaml:"config_refs,omitempty"`
+	Name            string                 `json:"name" yaml:"name"`
+	Command         string                 `json:"command" yaml:"command"`
+	Version         string                 `json:"version" yaml:"version"`
+	Provider        ProviderName           `json:"provider" yaml:"provider"`
+	ProviderArgs    map[string]interface{} `json:"provider_args,omitempty" yaml:"provider_args,omitempty"`
+	TargetOverrides TargetOverride         `json:"target_overrides,omitempty" yaml:"target_overrides,omitempty"`
+	Aliases         []string               `json:"aliases,omitempty" yaml:"aliases,omitempty"`
+	ConfigRefs      []ConfigRef            `json:"config_refs,omitempty" yaml:"config_refs,omitempty"`
 }
 
 // ConfigRef records an environment variable, alias, or file associated with a CLI.

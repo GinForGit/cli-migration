@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GinForGit/cli-migration/internal/crossplatform"
 	"github.com/GinForGit/cli-migration/internal/discover"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/providers"
@@ -14,7 +15,7 @@ import (
 )
 
 // Generate creates an action plan for applying a manifest on the current platform.
-func Generate(ctx context.Context, plat platform.Platform, m *api.Manifest) (*api.Plan, error) {
+func Generate(ctx context.Context, plat platform.Platform, m *api.Manifest, targetOS api.OSType) (*api.Plan, error) {
 	registry := providers.NewRegistry()
 	available := registry.Available()
 	availableNames := make(map[api.ProviderName]bool)
@@ -24,8 +25,26 @@ func Generate(ctx context.Context, plat platform.Platform, m *api.Manifest) (*ap
 
 	currentEntries := currentEnvironment(ctx)
 
+	resolver := crossplatform.NewDefaultResolver()
+
 	var actions []api.Action
 	for _, entry := range m.Entries {
+		// Cross-platform resolution.
+		if targetOS != m.Source.OS && targetOS != "" {
+			if crossplatform.CanResolve(entry, m.Source.OS, targetOS) {
+				resolved, err := resolver.Resolve(entry, m.Source.OS, targetOS)
+				if err == nil {
+					entry = resolved
+				}
+			} else {
+				actions = append(actions, api.Action{
+					Kind:    api.ActionWarn,
+					Entry:   entry,
+					Message: fmt.Sprintf("no cross-platform mapping from %s to %s", m.Source.OS, targetOS),
+				})
+				continue
+			}
+		}
 		action := resolveAction(entry, currentEntries, availableNames, plat)
 		actions = append(actions, action)
 	}
@@ -36,7 +55,7 @@ func Generate(ctx context.Context, plat platform.Platform, m *api.Manifest) (*ap
 
 	return &api.Plan{
 		ManifestPath: "",
-		TargetOS:     api.OSType(plat.OS()),
+		TargetOS:     targetOS,
 		Actions:      actions,
 	}, nil
 }

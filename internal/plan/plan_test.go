@@ -81,7 +81,7 @@ func TestGenerate(t *testing.T) {
 			{Name: "git", Command: "git", Version: "2.45.0", Provider: api.ProviderApt},
 		},
 	}
-	p, err := Generate(context.Background(), fakePlatform{}, m)
+	p, err := Generate(context.Background(), fakePlatform{}, m, api.OSLinux)
 	if err != nil {
 		t.Fatalf("generate failed: %v", err)
 	}
