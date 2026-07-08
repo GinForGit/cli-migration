@@ -16,34 +16,47 @@ import (
 	"github.com/GinForGit/cli-migration/pkg/api"
 )
 
-// Scan discovers installed CLI entries and the source platform info.
-func Scan(ctx context.Context) ([]api.Entry, api.SourceInfo, error) {
+// CurrentEnvironment scans PATH and providers and returns entries installed on
+// the current machine. It is used by plan and diff to compare against a manifest.
+func CurrentEnvironment(ctx context.Context, probeVersions bool) ([]api.Entry, error) {
 	plat, err := platform.New()
 	if err != nil {
-		return nil, api.SourceInfo{}, err
+		return nil, err
 	}
 
 	registry := providers.NewRegistry()
 	providerEntries, err := registry.DetectAll(ctx)
 	if err != nil {
-		return nil, api.SourceInfo{}, fmt.Errorf("detect providers: %w", err)
+		return nil, fmt.Errorf("detect providers: %w", err)
 	}
 
-	// PATH scan for executables not claimed by providers.
-	pathEntries, err := scanPath(ctx, plat)
+	pathEntries, err := scanPath(ctx, plat, probeVersions)
 	if err != nil {
-		return nil, api.SourceInfo{}, fmt.Errorf("scan PATH: %w", err)
+		return nil, fmt.Errorf("scan PATH: %w", err)
 	}
 
-	merged := mergeEntries(providerEntries, pathEntries)
+	return mergeEntries(providerEntries, pathEntries), nil
+}
+
+// Scan discovers installed CLI entries and the source platform info.
+func Scan(ctx context.Context, probeVersions bool) ([]api.Entry, api.SourceInfo, error) {
+	entries, err := CurrentEnvironment(ctx, probeVersions)
+	if err != nil {
+		return nil, api.SourceInfo{}, err
+	}
+
+	plat, err := platform.New()
+	if err != nil {
+		return nil, api.SourceInfo{}, err
+	}
 
 	source := api.SourceInfo{
 		OS:              api.OSType(plat.OS()),
 		Arch:            plat.Arch(),
 		Shell:           detectShell(),
-		PlatformVersion: "", // Not collected in Phase 0.
+		PlatformVersion: "",
 	}
-	return merged, source, nil
+	return entries, source, nil
 }
 
 // WriteManifest writes discovered entries to a manifest file.
@@ -61,7 +74,7 @@ func WriteManifest(path, format string, source api.SourceInfo, entries []api.Ent
 	}
 }
 
-func scanPath(ctx context.Context, plat platform.Platform) ([]api.Entry, error) {
+func scanPath(ctx context.Context, plat platform.Platform, probeVersions bool) ([]api.Entry, error) {
 	paths := plat.ListPathEntries()
 	seen := make(map[string]bool)
 	var entries []api.Entry
@@ -70,6 +83,11 @@ func scanPath(ctx context.Context, plat platform.Platform) ([]api.Entry, error) 
 
 	for _, dir := range paths {
 		if _, err := os.Stat(dir); err != nil {
+			continue
+		}
+		// Skip pure system directories and bundled utility directories.
+		cat := classifyPath(dir, plat.OS())
+		if cat == categorySystem || isNoisePath(dir, plat.OS()) {
 			continue
 		}
 		files, err := os.ReadDir(dir)
@@ -90,7 +108,11 @@ func scanPath(ctx context.Context, plat platform.Platform) ([]api.Entry, error) 
 			}
 			seen[command] = true
 			fullPath := filepath.Join(dir, name)
-			entries = append(entries, providers.NewManualEntry(fullPath))
+			entry := providers.NewManualEntry(fullPath)
+			if probeVersions {
+				entry.Version = ProbeVersion(command)
+			}
+			entries = append(entries, entry)
 		}
 	}
 
