@@ -17,15 +17,16 @@ CLI 无痛搬家工具：发现并迁移你的命令行环境。
 
 ## 支持的 Provider
 
-| Provider | 检测 | 安装 | 平台 |
-|----------|------|------|------|
-| scoop    | ✓    | ✓    | Windows |
-| winget   | ✓    | ✓    | Windows |
-| apt      | ✓    | ✓    | Linux   |
-| cargo    | ✓    | ✓    | 跨平台  |
-| npm      | ✓    | ✓    | 跨平台  |
-| pipx     | ✓    | ✓    | 跨平台  |
-| manual   | ✓    | ✗    | 跨平台  |
+| Provider   | 检测 | 安装 | 平台 |
+|------------|------|------|------|
+| scoop      | ✓    | ✓    | Windows |
+| winget     | ✓    | ✓    | Windows |
+| choco      | ✓    | ✓    | Windows |
+| apt        | ✓    | ✓    | Linux   |
+| cargo      | ✓    | ✓    | 跨平台  |
+| npm        | ✓    | ✓    | 跨平台  |
+| pipx       | ✓    | ✓    | 跨平台  |
+| manual     | ✓    | ✗    | 跨平台  |
 
 ## 安装
 

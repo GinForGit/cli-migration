@@ -19,6 +19,7 @@ func NewRegistry() *Registry {
 		providers: []Provider{
 			NewScoopProvider(),
 			NewWingetProvider(),
+			NewChocolateyProvider(),
 			NewAptProvider(),
 			NewCargoProvider(),
 			NewNpmProvider(),

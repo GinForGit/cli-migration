@@ -27,6 +27,7 @@ const (
 	ProviderPnpm     ProviderName = "pnpm"
 	ProviderYarn     ProviderName = "yarn"
 	ProviderPipx     ProviderName = "pipx"
+	ProviderChoco    ProviderName = "choco"
 	ProviderManual   ProviderName = "manual"
 )
 
