@@ -38,14 +38,17 @@ func isSystemPath(dir string, osType platform.OSType) bool {
 			`c:\windows\`,
 		})
 	}
-	return hasPrefixAny(lower, []string{
-		"/bin/",
-		"/sbin/",
-		"/usr/bin/",
-		"/usr/sbin/",
-		"/lib/",
-		"/usr/lib/",
-	})
+	// Linux: exact match or subdir of common system paths.
+	systemPaths := []string{
+		"/bin", "/sbin", "/usr/bin", "/usr/sbin",
+		"/lib", "/usr/lib", "/lib64", "/usr/lib64",
+	}
+	for _, p := range systemPaths {
+		if lower == p || strings.HasPrefix(lower, p+"/") {
+			return true
+		}
+	}
+	return false
 }
 
 // isUserPath returns true for directories that typically contain user-installed tools.
