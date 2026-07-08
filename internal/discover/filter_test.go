@@ -40,3 +40,26 @@ func TestIsNoisePath(t *testing.T) {
 		}
 	}
 }
+
+func TestFilterShouldScan(t *testing.T) {
+	f := DefaultFilter()
+	if !f.ShouldScan(`/usr/local/bin`, platform.OSLinux, 5) {
+		t.Error("expected /usr/local/bin with few files to be scanned")
+	}
+	if f.ShouldScan(`/usr/bin`, platform.OSLinux, 5) {
+		t.Error("expected /usr/bin to be skipped as system path")
+	}
+	if f.ShouldScan(`C:\Program Files\BundledTools`, platform.OSWindows, 100) {
+		t.Error("expected crowded non-user directory to be skipped")
+	}
+	if !f.ShouldScan(`C:\Users\x\scoop\apps\git\current`, platform.OSWindows, 100) {
+		t.Error("expected scoop directory to be scanned even if crowded")
+	}
+}
+
+func TestFilterZeroCrowdedThreshold(t *testing.T) {
+	f := &Filter{CrowdedThreshold: 0}
+	if !f.ShouldScan(`C:\Tools`, platform.OSWindows, 1000) {
+		t.Error("expected crowded directory to be scanned when threshold is disabled")
+	}
+}

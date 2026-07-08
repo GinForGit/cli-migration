@@ -7,24 +7,30 @@ import (
 	"github.com/GinForGit/cli-migration/internal/platform"
 )
 
-// pathCategory classifies a PATH directory.
-type pathCategory int
+// Filter decides which PATH directories should be scanned for CLI tools.
+type Filter struct {
+	CrowdedThreshold int
+}
 
-const (
-	categoryUnknown pathCategory = iota
-	categorySystem
-	categoryUser
-)
+// DefaultFilter returns a filter with sensible defaults.
+func DefaultFilter() *Filter {
+	return &Filter{CrowdedThreshold: 50}
+}
 
-// classifyPath returns whether a directory is likely a system or user directory.
-func classifyPath(dir string, osType platform.OSType) pathCategory {
+// ShouldScan returns true if a directory should be scanned.
+func (f *Filter) ShouldScan(dir string, osType platform.OSType, fileCount int) bool {
 	if isSystemPath(dir, osType) {
-		return categorySystem
+		return false
 	}
-	if isUserPath(dir, osType) {
-		return categoryUser
+	if isNoisePath(dir, osType) {
+		return false
 	}
-	return categoryUnknown
+	// Directories with many executables are usually bundled utility collections
+	// (e.g. Git for Windows usr/bin) rather than individually installed CLI tools.
+	if f.CrowdedThreshold > 0 && fileCount > f.CrowdedThreshold && !isUserPath(dir, osType) {
+		return false
+	}
+	return true
 }
 
 // isSystemPath returns true for directories that contain operating-system
@@ -32,13 +38,11 @@ func classifyPath(dir string, osType platform.OSType) pathCategory {
 func isSystemPath(dir string, osType platform.OSType) bool {
 	lower := strings.ToLower(dir)
 	if osType == platform.OSWindows {
-		// Match C:\Windows, C:\Windows\System32, C:\Windows\SysWOW64, etc.
 		return hasPrefixAny(lower, []string{
 			`c:\windows`,
 			`c:\windows\`,
 		})
 	}
-	// Linux: exact match or subdir of common system paths.
 	systemPaths := []string{
 		"/bin", "/sbin", "/usr/bin", "/usr/sbin",
 		"/lib", "/usr/lib", "/lib64", "/usr/lib64",
@@ -117,4 +121,24 @@ func hasPrefixAny(s string, prefixes []string) bool {
 // normalizePath returns a clean absolute-style lowercased path for comparison.
 func normalizePath(p string) string {
 	return strings.ToLower(filepath.Clean(p))
+}
+
+// pathCategory is kept for backward compatibility with existing tests.
+type pathCategory int
+
+const (
+	categoryUnknown pathCategory = iota
+	categorySystem
+	categoryUser
+)
+
+// classifyPath classifies a directory for tests.
+func classifyPath(dir string, osType platform.OSType) pathCategory {
+	if isSystemPath(dir, osType) {
+		return categorySystem
+	}
+	if isUserPath(dir, osType) {
+		return categoryUser
+	}
+	return categoryUnknown
 }
