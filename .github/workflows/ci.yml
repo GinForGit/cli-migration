@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        go: ['1.22', '1.23']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build
+        run: go build ./...
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Run CLI version smoke test
+        run: go run ./cmd/cli-mig version
+
+      - name: Run discover smoke test (linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: go run ./cmd/cli-mig discover --output /tmp/env.yaml
+
+      - name: Run discover smoke test (windows)
+        if: matrix.os == 'windows-latest'
+        run: go run ./cmd/cli-mig discover --output $env:TEMP\env.yaml
+        shell: pwsh
