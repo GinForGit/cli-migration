@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GinForGit/cli-migration/internal/discover"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/providers"
 	"github.com/GinForGit/cli-migration/pkg/api"
@@ -21,7 +22,7 @@ func Generate(ctx context.Context, plat platform.Platform, m *api.Manifest) (*ap
 		availableNames[p.Name()] = true
 	}
 
-	currentEntries := currentEnvironment(ctx, plat, registry)
+	currentEntries := currentEnvironment(ctx)
 
 	var actions []api.Action
 	for _, entry := range m.Entries {
@@ -40,8 +41,8 @@ func Generate(ctx context.Context, plat platform.Platform, m *api.Manifest) (*ap
 	}, nil
 }
 
-func currentEnvironment(ctx context.Context, plat platform.Platform, registry *providers.Registry) map[string]api.Entry {
-	entries, err := registry.DetectAll(ctx)
+func currentEnvironment(ctx context.Context) map[string]api.Entry {
+	entries, err := discover.CurrentEnvironment(ctx, false)
 	if err != nil {
 		return map[string]api.Entry{}
 	}
