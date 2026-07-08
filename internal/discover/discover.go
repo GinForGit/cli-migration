@@ -80,18 +80,24 @@ func scanPath(ctx context.Context, plat platform.Platform, probeVersions bool) (
 	var entries []api.Entry
 
 	exts := plat.ExecutableExtensions()
+	filter := DefaultFilter()
 
 	for _, dir := range paths {
 		if _, err := os.Stat(dir); err != nil {
 			continue
 		}
-		// Skip pure system directories and bundled utility directories.
-		cat := classifyPath(dir, plat.OS())
-		if cat == categorySystem || isNoisePath(dir, plat.OS()) {
-			continue
-		}
 		files, err := os.ReadDir(dir)
 		if err != nil {
+			continue
+		}
+		// Count executables in this directory for crowded heuristic.
+		execCount := 0
+		for _, f := range files {
+			if !f.IsDir() && isExecutable(f.Name(), plat.OS(), exts) {
+				execCount++
+			}
+		}
+		if !filter.ShouldScan(dir, plat.OS(), execCount) {
 			continue
 		}
 		for _, f := range files {
