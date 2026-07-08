@@ -17,7 +17,7 @@ import (
 )
 
 // Scan discovers installed CLI entries and the source platform info.
-func Scan(ctx context.Context) ([]api.Entry, api.SourceInfo, error) {
+func Scan(ctx context.Context, probeVersions bool) ([]api.Entry, api.SourceInfo, error) {
 	plat, err := platform.New()
 	if err != nil {
 		return nil, api.SourceInfo{}, err
@@ -30,7 +30,7 @@ func Scan(ctx context.Context) ([]api.Entry, api.SourceInfo, error) {
 	}
 
 	// PATH scan for executables not claimed by providers.
-	pathEntries, err := scanPath(ctx, plat)
+	pathEntries, err := scanPath(ctx, plat, probeVersions)
 	if err != nil {
 		return nil, api.SourceInfo{}, fmt.Errorf("scan PATH: %w", err)
 	}
@@ -41,7 +41,7 @@ func Scan(ctx context.Context) ([]api.Entry, api.SourceInfo, error) {
 		OS:              api.OSType(plat.OS()),
 		Arch:            plat.Arch(),
 		Shell:           detectShell(),
-		PlatformVersion: "", // Not collected in Phase 0.
+		PlatformVersion: "",
 	}
 	return merged, source, nil
 }
@@ -61,7 +61,7 @@ func WriteManifest(path, format string, source api.SourceInfo, entries []api.Ent
 	}
 }
 
-func scanPath(ctx context.Context, plat platform.Platform) ([]api.Entry, error) {
+func scanPath(ctx context.Context, plat platform.Platform, probeVersions bool) ([]api.Entry, error) {
 	paths := plat.ListPathEntries()
 	seen := make(map[string]bool)
 	var entries []api.Entry
@@ -70,6 +70,11 @@ func scanPath(ctx context.Context, plat platform.Platform) ([]api.Entry, error) 
 
 	for _, dir := range paths {
 		if _, err := os.Stat(dir); err != nil {
+			continue
+		}
+		// Skip pure system directories and bundled utility directories.
+		cat := classifyPath(dir, plat.OS())
+		if cat == categorySystem || isNoisePath(dir, plat.OS()) {
 			continue
 		}
 		files, err := os.ReadDir(dir)
@@ -90,7 +95,11 @@ func scanPath(ctx context.Context, plat platform.Platform) ([]api.Entry, error) 
 			}
 			seen[command] = true
 			fullPath := filepath.Join(dir, name)
-			entries = append(entries, providers.NewManualEntry(fullPath))
+			entry := providers.NewManualEntry(fullPath)
+			if probeVersions {
+				entry.Version = ProbeVersion(command)
+			}
+			entries = append(entries, entry)
 		}
 	}
 
