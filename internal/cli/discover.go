@@ -14,13 +14,14 @@ func newDiscoverCommand() *cobra.Command {
 	var format string
 	var probeVersions bool
 	var targetOS string
+	var includeConfigs bool
 
 	cmd := &cobra.Command{
 		Use:   "discover",
 		Short: "扫描当前系统的 CLI 环境",
 		Long:  "发现当前系统中已安装的所有 CLI 工具，并生成清单文件。",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			entries, source, err := discover.Scan(cmd.Context(), probeVersions)
+			entries, source, err := discover.Scan(cmd.Context(), probeVersions, includeConfigs)
 			if err != nil {
 				return err
 			}
@@ -34,6 +35,7 @@ func newDiscoverCommand() *cobra.Command {
 	cmd.Flags().StringVarP(&output, "output", "o", "env.yaml", "输出文件路径")
 	cmd.Flags().StringVarP(&format, "format", "f", "yaml", "输出格式：yaml 或 json")
 	cmd.Flags().BoolVar(&probeVersions, "probe-versions", false, "探测 manual 条目的版本（较慢）")
+	cmd.Flags().BoolVar(&includeConfigs, "include-configs", false, "收集 shell alias、环境变量和 dotfiles")
 	cmd.Flags().StringVar(
 	&targetOS, "target-os", "", "为指定目标系统生成 target_overrides")
 	return cmd

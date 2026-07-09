@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/GinForGit/cli-migration/internal/bundle"
+	"github.com/GinForGit/cli-migration/internal/manifest"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/spf13/cobra"
 )
@@ -66,6 +67,9 @@ func newImportCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if err := rewriteImportedConfigSources(manifestPath, outputDir); err != nil {
+				return err
+			}
 			fmt.Printf("Imported to: %s\nManifest: %s\n", outputDir, manifestPath)
 			return nil
 		},
@@ -73,4 +77,32 @@ func newImportCommand() *cobra.Command {
 
 	cmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "解压目录（默认根据 bundle 名推断）")
 	return cmd
+}
+
+// rewriteImportedConfigSources updates file ConfigRefs so they point to the
+// configs/ directory inside the unpacked bundle instead of the original paths.
+func rewriteImportedConfigSources(manifestPath, bundleDir string) error {
+	m, err := manifest.Load(manifestPath)
+	if err != nil {
+		return err
+	}
+	configsDir := filepath.Join(bundleDir, "configs")
+	rewritten := false
+	for i := range m.Entries {
+		for j := range m.Entries[i].ConfigRefs {
+			ref := &m.Entries[i].ConfigRefs[j]
+			if ref.Type != "file" || ref.Source == "" {
+				continue
+			}
+			candidate := filepath.Join(configsDir, filepath.Base(ref.Source))
+			if _, err := os.Stat(candidate); err == nil {
+				ref.Source = candidate
+				rewritten = true
+			}
+		}
+	}
+	if !rewritten {
+		return nil
+	}
+	return manifest.Save(manifestPath, m)
 }

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/GinForGit/cli-migration/internal/configs"
 	"github.com/GinForGit/cli-migration/internal/manifest"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/providers"
@@ -39,7 +40,9 @@ func CurrentEnvironment(ctx context.Context, probeVersions bool) ([]api.Entry, e
 }
 
 // Scan discovers installed CLI entries and the source platform info.
-func Scan(ctx context.Context, probeVersions bool) ([]api.Entry, api.SourceInfo, error) {
+// When includeConfigs is true, shell aliases, environment variables and
+// known dotfiles are collected and attached to matching entries.
+func Scan(ctx context.Context, probeVersions, includeConfigs bool) ([]api.Entry, api.SourceInfo, error) {
 	entries, err := CurrentEnvironment(ctx, probeVersions)
 	if err != nil {
 		return nil, api.SourceInfo{}, err
@@ -48,6 +51,13 @@ func Scan(ctx context.Context, probeVersions bool) ([]api.Entry, api.SourceInfo,
 	plat, err := platform.New()
 	if err != nil {
 		return nil, api.SourceInfo{}, err
+	}
+
+	if includeConfigs {
+		entries, err = configs.Collect(plat, entries)
+		if err != nil {
+			return nil, api.SourceInfo{}, fmt.Errorf("collect configs: %w", err)
+		}
 	}
 
 	source := api.SourceInfo{

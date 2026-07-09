@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/GinForGit/cli-migration/internal/configs"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/providers"
 	"github.com/GinForGit/cli-migration/pkg/api"
@@ -12,7 +13,8 @@ import (
 
 // Options controls apply behavior.
 type Options struct {
-	SkipManual bool
+	SkipManual   bool
+	ApplyConfigs bool
 }
 
 // Execute runs the actions in a plan.
@@ -37,6 +39,11 @@ func Execute(ctx context.Context, plat platform.Platform, p *api.Plan, opts Opti
 				installed++
 			} else {
 				upgraded++
+			}
+			if opts.ApplyConfigs {
+				if err := configs.Apply(plat, action.Entry); err != nil {
+					fmt.Printf("[warn] %s config: %v\n", action.Entry.Command, err)
+				}
 			}
 		case api.ActionSkip:
 			fmt.Printf("[skip] %s\n", action.Entry.Command)

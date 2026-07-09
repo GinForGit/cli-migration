@@ -119,6 +119,7 @@ cli-mig version
 | `--output` | `-o` | `env.yaml` | 输出清单文件路径 |
 | `--format` | `-f` | `yaml` | 输出格式：`yaml` 或 `json` |
 | `--probe-versions` | - | `false` | 探测 `manual` 条目的版本（较慢） |
+| `--include-configs` | - | `false` | 收集 shell alias、环境变量和 dotfiles |
 | `--target-os` | - | `""` | 为指定目标系统生成 `target_overrides`，可选 `windows`、`linux` |
 
 ```bash
@@ -147,6 +148,7 @@ cli-mig plan -m my-env.yaml --target-os windows
 | `--manifest` | `-m` | - | 清单文件路径（必填） |
 | `--dry-run` | - | `false` | 只预览，不执行 |
 | `--skip-manual` | - | `false` | 跳过无法自动安装的 `manual` 条目 |
+| `--apply-configs` | - | `false` | 同时应用清单中的 `config_refs` |
 | `--target-os` | - | 当前系统 | 目标操作系统：`windows`、`linux` |
 
 ```bash
