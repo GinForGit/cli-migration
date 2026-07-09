@@ -11,6 +11,7 @@ import (
 	"github.com/GinForGit/cli-migration/internal/discover"
 	"github.com/GinForGit/cli-migration/internal/platform"
 	"github.com/GinForGit/cli-migration/internal/providers"
+	"github.com/GinForGit/cli-migration/internal/semver"
 	"github.com/GinForGit/cli-migration/pkg/api"
 )
 
@@ -93,7 +94,7 @@ func resolveAction(entry api.Entry, current map[string]api.Entry, availableNames
 		return api.Action{Kind: api.ActionSkip, Entry: entry, Current: cur.Version}
 	}
 
-	switch compareVersions(cur.Version, entry.Version) {
+	switch semver.Compare(cur.Version, entry.Version) {
 	case -1:
 		return api.Action{Kind: api.ActionUpgrade, Entry: entry, Current: cur.Version}
 	case 1:
@@ -103,32 +104,9 @@ func resolveAction(entry api.Entry, current map[string]api.Entry, availableNames
 	}
 }
 
-// compareVersions is a very naive semver-like comparison.
-// Returns -1 if a < b, 0 if equal, 1 if a > b.
+// compareVersions is kept for backwards compatibility but delegates to semver.Compare.
 func compareVersions(a, b string) int {
-	// Strip leading 'v'.
-	a = strings.TrimPrefix(a, "v")
-	b = strings.TrimPrefix(b, "v")
-	partsA := strings.Split(a, ".")
-	partsB := strings.Split(b, ".")
-	for i := 0; i < len(partsA) && i < len(partsB); i++ {
-		var na, nb int
-		fmt.Sscanf(partsA[i], "%d", &na)
-		fmt.Sscanf(partsB[i], "%d", &nb)
-		if na < nb {
-			return -1
-		}
-		if na > nb {
-			return 1
-		}
-	}
-	if len(partsA) < len(partsB) {
-		return -1
-	}
-	if len(partsA) > len(partsB) {
-		return 1
-	}
-	return 0
+	return semver.Compare(a, b)
 }
 
 // Format renders a plan as human-readable text.
