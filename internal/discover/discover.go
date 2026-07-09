@@ -84,6 +84,24 @@ func WriteManifest(path, format string, source api.SourceInfo, entries []api.Ent
 	}
 }
 
+// FilterEntries returns entries whose name or command contains the filter
+// string (case-insensitive). An empty filter returns all entries.
+func FilterEntries(entries []api.Entry, filter string) []api.Entry {
+	filter = strings.TrimSpace(filter)
+	if filter == "" {
+		return entries
+	}
+	lower := strings.ToLower(filter)
+	var out []api.Entry
+	for _, e := range entries {
+		if strings.Contains(strings.ToLower(e.Name), lower) ||
+			strings.Contains(strings.ToLower(e.Command), lower) {
+			out = append(out, e)
+		}
+	}
+	return out
+}
+
 func scanPath(ctx context.Context, plat platform.Platform, probeVersions bool) ([]api.Entry, error) {
 	paths := plat.ListPathEntries()
 	seen := make(map[string]bool)

@@ -15,6 +15,7 @@ func newDiscoverCommand() *cobra.Command {
 	var probeVersions bool
 	var targetOS string
 	var includeConfigs bool
+	var filter string
 
 	cmd := &cobra.Command{
 		Use:   "discover",
@@ -28,6 +29,7 @@ func newDiscoverCommand() *cobra.Command {
 			if targetOS != "" {
 				entries = resolveTargetOverrides(entries, source.OS, api.OSType(targetOS))
 			}
+			entries = discover.FilterEntries(entries, filter)
 			return discover.WriteManifest(output, format, source, entries)
 		},
 	}
@@ -37,7 +39,9 @@ func newDiscoverCommand() *cobra.Command {
 	cmd.Flags().BoolVar(&probeVersions, "probe-versions", false, "探测 manual 条目的版本（较慢）")
 	cmd.Flags().BoolVar(&includeConfigs, "include-configs", false, "收集 shell alias、环境变量和 dotfiles")
 	cmd.Flags().StringVar(
-	&targetOS, "target-os", "", "为指定目标系统生成 target_overrides")
+		&targetOS, "target-os", "", "为指定目标系统生成 target_overrides")
+	cmd.Flags().StringVar(
+		&filter, "filter", "cli", "按名称过滤条目（空字符串表示不过滤）")
 	return cmd
 }
 

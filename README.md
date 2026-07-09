@@ -121,6 +121,7 @@ cli-mig version
 | `--probe-versions` | - | `false` | 探测 `manual` 条目的版本（较慢） |
 | `--include-configs` | - | `false` | 收集 shell alias、环境变量和 dotfiles |
 | `--target-os` | - | `""` | 为指定目标系统生成 `target_overrides`，可选 `windows`、`linux` |
+| `--filter` | - | `cli` | 按名称过滤条目，空字符串表示不过滤 |
 
 ```bash
 cli-mig discover -o my-env.yaml -f yaml --target-os linux
