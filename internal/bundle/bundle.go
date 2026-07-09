@@ -58,7 +58,18 @@ func Pack(manifestPath, outputPath string, opts PackOptions) error {
 	// Add configs.
 	var included []string
 	if opts.IncludeConfigs {
+		configSet := make(map[string]bool)
 		for _, src := range opts.ConfigPaths {
+			configSet[src] = true
+		}
+		for _, e := range m.Entries {
+			for _, ref := range e.ConfigRefs {
+				if ref.Type == "file" && ref.Source != "" {
+					configSet[ref.Source] = true
+				}
+			}
+		}
+		for src := range configSet {
 			if _, err := os.Stat(src); err != nil {
 				continue
 			}
