@@ -1,0 +1,71 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            suffix: .exe
+          - goos: linux
+            goarch: amd64
+            suffix: ""
+          - goos: linux
+            goarch: arm64
+            suffix: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          go build -ldflags "-s -w -X github.com/GinForGit/cli-migration/internal/cli.version=${GITHUB_REF_NAME} -X github.com/GinForGit/cli-migration/internal/cli.commit=${GITHUB_SHA::7} -X github.com/GinForGit/cli-migration/internal/cli.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" -o dist/cli-mig-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }} ./cmd/cli-mig
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cli-mig-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/cli-mig-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
+
+  github-release:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: cli-mig-*
+
+      - name: Create checksums
+        working-directory: dist
+        run: |
+          find . -type f -exec sha256sum {} + | sed 's|./||' > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
